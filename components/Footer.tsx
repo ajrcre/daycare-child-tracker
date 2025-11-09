@@ -1,5 +1,4 @@
-
-import React from 'react';
+import React, { forwardRef } from 'react';
 import { Child, Status } from '../types';
 
 interface FooterProps {
@@ -9,7 +8,7 @@ interface FooterProps {
   onFilterChange: (statusId: string | null) => void;
 }
 
-const Footer: React.FC<FooterProps> = ({ children, statuses, activeFilter, onFilterChange }) => {
+const Footer = forwardRef<HTMLElement, FooterProps>(({ children, statuses, activeFilter, onFilterChange }, ref) => {
   const getStatusCount = (statusId: string) => {
     return children.filter(c => c.statusId === statusId).length;
   };
@@ -17,7 +16,7 @@ const Footer: React.FC<FooterProps> = ({ children, statuses, activeFilter, onFil
   const totalChildren = children.length;
 
   return (
-    <footer className="fixed bottom-0 left-0 right-0 bg-gray-100 border-t border-gray-200 p-2 z-20">
+    <footer ref={ref} className="fixed bottom-0 left-0 right-0 bg-gray-100 border-t border-gray-200 p-2 z-20">
       <div className="container mx-auto flex items-center justify-center gap-2 flex-wrap">
         <button
           onClick={() => onFilterChange(null)}
@@ -50,6 +49,8 @@ const Footer: React.FC<FooterProps> = ({ children, statuses, activeFilter, onFil
       </div>
     </footer>
   );
-};
+});
+
+Footer.displayName = 'Footer';
 
 export default Footer;

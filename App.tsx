@@ -1,5 +1,4 @@
-
-import React, { useState, useEffect, useCallback, useMemo } from 'react';
+import React, { useState, useEffect, useCallback, useMemo, useRef, useLayoutEffect } from 'react';
 import Header from './components/Header';
 import ChildCard from './components/ChildCard';
 import Footer from './components/Footer';
@@ -18,7 +17,9 @@ const App: React.FC = () => {
   const [isLoading, setIsLoading] = useState(true);
   const [activeFilter, setActiveFilter] = useState<string | null>(null);
   const [modal, setModal] = useState<ModalState>(null);
-  
+  const footerRef = useRef<HTMLElement>(null);
+  const [footerHeight, setFooterHeight] = useState(0);
+
   const loadDataFromStorage = useCallback(() => {
     try {
       const storedChildren = localStorage.getItem(LOCAL_STORAGE_KEYS.CHILDREN);
@@ -39,6 +40,25 @@ const App: React.FC = () => {
     } finally {
       setIsLoading(false);
     }
+  }, []);
+  
+  useLayoutEffect(() => {
+    const observer = new ResizeObserver(entries => {
+      window.requestAnimationFrame(() => {
+        if (entries[0]) {
+          // Fix: The 'target' property on a ResizeObserverEntry is of type 'Element', which doesn't have 'offsetHeight'. Cast it to HTMLElement.
+          setFooterHeight((entries[0].target as HTMLElement).offsetHeight);
+        }
+      });
+    });
+
+    if (footerRef.current) {
+      observer.observe(footerRef.current);
+    }
+    
+    return () => {
+      observer.disconnect();
+    };
   }, []);
 
   useEffect(() => {
@@ -159,14 +179,14 @@ const App: React.FC = () => {
   };
 
   return (
-    <div className="bg-gray-50 min-h-screen pb-24" dir="rtl">
+    <div className="bg-gray-50 min-h-screen" dir="rtl">
       <Header 
         onAddChild={() => setModal({ type: 'addChild' })}
         onSettings={() => setModal({ type: 'settings', payload: { statuses } })}
         onRefresh={loadDataFromStorage}
         onReset={handleReset}
       />
-      <main className="container mx-auto p-4">
+      <main className="container mx-auto p-4" style={{ paddingBottom: `${footerHeight + 16}px` }}>
         {isLoading ? (
           <div className="text-center p-10">טוען נתונים...</div>
         ) : (
@@ -185,6 +205,7 @@ const App: React.FC = () => {
       
       {!isLoading && (
         <Footer 
+          ref={footerRef}
           children={children} 
           statuses={statuses}
           activeFilter={activeFilter}

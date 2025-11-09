@@ -31,7 +31,7 @@ const ChildCard: React.FC<ChildCardProps> = ({ child, statuses, onStatusChange, 
 
   return (
     <div className={`bg-white rounded-lg shadow-sm border border-gray-200 p-4 mb-3 relative ${menuOpen ? 'z-10' : ''}`}>
-      <div className="flex items-center justify-between">
+      <div className="flex items-center justify-between flex-wrap gap-y-3">
         <div className="flex items-center gap-4">
              <h3 className="text-xl font-bold text-gray-800">{`${child.firstName} ${child.lastName}`}</h3>
             <div ref={menuRef} className="relative">
@@ -47,7 +47,7 @@ const ChildCard: React.FC<ChildCardProps> = ({ child, statuses, onStatusChange, 
             </div>
         </div>
 
-        <div className="flex-grow flex justify-center items-center gap-2 mx-4">
+        <div className="flex-1 flex justify-end items-center gap-2 flex-wrap">
             {statuses.map(status => {
                 const isActive = child.statusId === status.id;
                 const buttonColor = isActive ? status.color : 'bg-gray-200';
@@ -58,7 +58,7 @@ const ChildCard: React.FC<ChildCardProps> = ({ child, statuses, onStatusChange, 
                     <button
                         key={status.id}
                         onClick={() => onStatusChange(child.id, status.id)}
-                        className={`px-4 py-2 rounded-md font-semibold transition flex-1 text-center ${buttonColor} ${textColor} ${hoverColor}`}
+                        className={`px-4 py-2 rounded-md font-semibold transition text-center ${buttonColor} ${textColor} ${hoverColor}`}
                     >
                       <div>{status.label}</div>
                       {isActive && child.lastUpdated && <div className="text-xs font-normal">{formatTime(child.lastUpdated)}</div>}
