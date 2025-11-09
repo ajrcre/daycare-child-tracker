@@ -1,0 +1,5 @@
+{
+  "name": "צהרון - מעקב איסוף",
+  "description": "A simple, real-time pickup status tracker for a daycare class. Allows teachers to update child statuses and parents to view them instantly on a shared screen.",
+  "requestFramePermissions": []
+}
