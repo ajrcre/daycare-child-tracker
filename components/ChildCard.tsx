@@ -31,9 +31,28 @@ const ChildCard: React.FC<ChildCardProps> = ({ child, statuses, onStatusChange, 
 
   return (
     <div className={`bg-white rounded-lg shadow-sm border border-gray-200 p-4 mb-3 relative ${menuOpen ? 'z-10' : ''}`}>
-      <div className="flex items-center justify-between flex-wrap gap-y-3">
-        <div className="flex items-center gap-4">
-             <h3 className="text-xl font-bold text-gray-800">{`${child.firstName} ${child.lastName}`}</h3>
+      <div className="flex items-center justify-between gap-4">
+        <div className="flex items-center gap-2 overflow-x-auto scrollbar-hide" style={{paddingBottom: '8px', marginBottom: '-8px'}}>
+            {statuses.map(status => {
+                const isActive = child.statusId === status.id;
+                const buttonColor = isActive ? status.color : 'bg-gray-200';
+                const textColor = isActive ? 'text-white' : 'text-gray-700';
+                const hoverColor = isActive ? '' : 'hover:bg-gray-300';
+                
+                return (
+                    <button
+                        key={status.id}
+                        onClick={() => onStatusChange(child.id, status.id)}
+                        className={`px-4 py-2 rounded-md font-semibold transition text-center flex-shrink-0 ${buttonColor} ${textColor} ${hoverColor}`}
+                    >
+                      <div>{status.label}</div>
+                      {isActive && child.lastUpdated && <div className="text-xs font-normal">{formatTime(child.lastUpdated)}</div>}
+                    </button>
+                )
+            })}
+        </div>
+
+        <div className="flex items-center gap-2 flex-shrink-0">
             <div ref={menuRef} className="relative">
               <button onClick={() => setMenuOpen(!menuOpen)} className="text-gray-500 hover:text-gray-800 p-1">
                 <KebabIcon />
@@ -45,30 +64,11 @@ const ChildCard: React.FC<ChildCardProps> = ({ child, statuses, onStatusChange, 
                 </div>
               )}
             </div>
-        </div>
-
-        <div className="flex-1 flex justify-end items-center gap-2 flex-wrap">
-            {statuses.map(status => {
-                const isActive = child.statusId === status.id;
-                const buttonColor = isActive ? status.color : 'bg-gray-200';
-                const textColor = isActive ? 'text-white' : 'text-gray-700';
-                const hoverColor = isActive ? '' : 'hover:bg-gray-300';
-                
-                return (
-                    <button
-                        key={status.id}
-                        onClick={() => onStatusChange(child.id, status.id)}
-                        className={`px-4 py-2 rounded-md font-semibold transition text-center ${buttonColor} ${textColor} ${hoverColor}`}
-                    >
-                      <div>{status.label}</div>
-                      {isActive && child.lastUpdated && <div className="text-xs font-normal">{formatTime(child.lastUpdated)}</div>}
-                    </button>
-                )
-            })}
+             <h3 className="text-xl font-bold text-gray-800 truncate">{`${child.firstName} ${child.lastName}`}</h3>
         </div>
       </div>
       {child.notes && (
-        <div className="mt-3 pr-12 text-sm text-gray-600 italic">
+        <div className="mt-3 text-right text-sm text-gray-600 italic">
           <p>הערה: {child.notes}</p>
         </div>
       )}
