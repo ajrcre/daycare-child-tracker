@@ -86,7 +86,7 @@ const ChildCard: React.FC<ChildCardProps> = ({ child, statuses, onStatusChange, 
   return (
     <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-3 flex items-center justify-between gap-3">
       {/* Left Section: Name and Note */}
-      <div className="flex-grow flex flex-col items-start overflow-hidden">
+      <div className="flex-grow flex flex-col items-start overflow-hidden mx-2">
         <h3 className="text-lg font-bold text-gray-800 truncate w-full" title={`${child.firstName} ${child.lastName}`}>
           {`${child.firstName} ${child.lastName}`}
         </h3>
