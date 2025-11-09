@@ -13,9 +13,13 @@ interface ChildCardProps {
 const ChildCard: React.FC<ChildCardProps> = ({ child, statuses, onStatusChange, onDelete, onAddNote }) => {
   const [optionsMenuOpen, setOptionsMenuOpen] = useState(false);
   const [statusMenuOpen, setStatusMenuOpen] = useState(false);
+  const [statusMenuPosition, setStatusMenuPosition] = useState<'top' | 'bottom'>('top');
+  const [optionsMenuStyle, setOptionsMenuSyle] = useState<React.CSSProperties>({});
 
   const optionsMenuRef = useRef<HTMLDivElement>(null);
+  const optionsButtonRef = useRef<HTMLButtonElement>(null);
   const statusMenuRef = useRef<HTMLDivElement>(null);
+  const statusButtonRef = useRef<HTMLButtonElement>(null);
 
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
@@ -29,6 +33,48 @@ const ChildCard: React.FC<ChildCardProps> = ({ child, statuses, onStatusChange, 
     document.addEventListener('mousedown', handleClickOutside);
     return () => document.removeEventListener('mousedown', handleClickOutside);
   }, []);
+
+  const handleStatusButtonClick = () => {
+    if (statusButtonRef.current) {
+        const rect = statusButtonRef.current.getBoundingClientRect();
+        // If there's not enough space above (e.g., less than 250px), open downwards
+        if (rect.top < 250) {
+            setStatusMenuPosition('bottom');
+        } else {
+            setStatusMenuPosition('top');
+        }
+    }
+    setStatusMenuOpen(prev => !prev);
+  };
+
+  const handleOptionsMenuToggle = () => {
+    if (!optionsMenuOpen && optionsButtonRef.current) {
+        const rect = optionsButtonRef.current.getBoundingClientRect();
+        const menuHeight = 80; // Estimated height for 2 items
+        const menuWidth = 160; // w-40 in tailwind is 10rem = 160px
+
+        const style: React.CSSProperties = {};
+
+        // Vertical positioning: check if there's enough space below
+        if (rect.bottom + menuHeight > window.innerHeight) {
+            style.bottom = '100%';
+            style.marginBottom = '0.5rem';
+        } else {
+            style.top = '100%';
+            style.marginTop = '0.5rem';
+        }
+
+        // Horizontal positioning: check if there's enough space to the left (for RTL)
+        if (rect.left < menuWidth) {
+            style.left = 0;
+        } else {
+            style.right = 0;
+        }
+
+        setOptionsMenuSyle(style);
+    }
+    setOptionsMenuOpen(prev => !prev);
+  };
 
   const formatTime = (dateString: string | null) => {
     if (!dateString) return '';
@@ -45,7 +91,7 @@ const ChildCard: React.FC<ChildCardProps> = ({ child, statuses, onStatusChange, 
           {`${child.firstName} ${child.lastName}`}
         </h3>
         {child.notes && (
-          <p className="text-xs text-gray-500 italic truncate w-full" title={child.notes}>
+          <p className="text-xs text-gray-500 italic truncate w-full text-right" title={child.notes}>
             {child.notes}
           </p>
         )}
@@ -56,7 +102,8 @@ const ChildCard: React.FC<ChildCardProps> = ({ child, statuses, onStatusChange, 
         {/* Status Selector */}
         <div ref={statusMenuRef} className="relative w-32">
           <button
-            onClick={() => setStatusMenuOpen(!statusMenuOpen)}
+            ref={statusButtonRef}
+            onClick={handleStatusButtonClick}
             className={`w-full px-2 py-1.5 rounded-md font-semibold text-white transition flex items-center justify-between text-sm ${currentStatus?.color || 'bg-gray-400'}`}
           >
             <div className="flex flex-col items-start">
@@ -66,7 +113,9 @@ const ChildCard: React.FC<ChildCardProps> = ({ child, statuses, onStatusChange, 
             <ChevronDownIcon className="w-4 h-4" />
           </button>
           {statusMenuOpen && (
-            <div className="absolute bottom-full left-0 right-0 mb-2 w-full bg-white rounded-md shadow-lg py-1 z-20 max-h-48 overflow-y-auto">
+            <div className={`absolute left-0 right-0 w-full bg-white rounded-md shadow-lg py-1 z-20 max-h-48 overflow-y-auto ${
+                statusMenuPosition === 'top' ? 'bottom-full mb-2' : 'top-full mt-2'
+            }`}>
               {statuses.map(status => (
                 <button
                   key={status.id}
@@ -85,11 +134,11 @@ const ChildCard: React.FC<ChildCardProps> = ({ child, statuses, onStatusChange, 
 
         {/* Options Menu */}
         <div ref={optionsMenuRef} className="relative">
-          <button onClick={() => setOptionsMenuOpen(!optionsMenuOpen)} className="text-gray-500 hover:text-gray-800 p-1">
+          <button ref={optionsButtonRef} onClick={handleOptionsMenuToggle} className="text-gray-500 hover:text-gray-800 p-1">
             <KebabIcon />
           </button>
           {optionsMenuOpen && (
-            <div className="absolute right-0 mt-2 w-40 bg-white rounded-md shadow-lg py-1 z-10">
+            <div style={optionsMenuStyle} className="absolute w-40 bg-white rounded-md shadow-lg py-1 z-30">
               <button onClick={() => { onAddNote(child.id, child.notes || ''); setOptionsMenuOpen(false); }} className="block w-full text-right px-4 py-2 text-sm text-gray-700 hover:bg-gray-100">{child.notes ? 'ערוך הערה' : 'הוסף הערה'}</button>
               <button onClick={() => { onDelete(child.id); setOptionsMenuOpen(false); }} className="block w-full text-right px-4 py-2 text-sm text-red-600 hover:bg-gray-100">הסר ילד</button>
             </div>
