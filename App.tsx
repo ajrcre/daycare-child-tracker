@@ -169,16 +169,18 @@ const App: React.FC = () => {
         {isLoading ? (
           <div className="text-center p-10">טוען נתונים...</div>
         ) : (
-          sortedAndFilteredChildren.map(child => (
-            <ChildCard 
-              key={child.id} 
-              child={child} 
-              statuses={statuses} 
-              onStatusChange={handleUpdateChildStatus}
-              onDelete={handleDeleteChild}
-              onAddNote={handleAddNote}
-            />
-          ))
+          <div className="grid grid-cols-1 gap-4 max-w-2xl mx-auto">
+            {sortedAndFilteredChildren.map(child => (
+              <ChildCard 
+                key={child.id} 
+                child={child} 
+                statuses={statuses} 
+                onStatusChange={handleUpdateChildStatus}
+                onDelete={handleDeleteChild}
+                onAddNote={handleAddNote}
+              />
+            ))}
+          </div>
         )}
       </main>
       

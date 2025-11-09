@@ -1,4 +1,3 @@
-
 import React from 'react';
 
 export const SettingsIcon = ({ className = 'w-6 h-6' }: { className?: string }) => (
@@ -44,5 +43,11 @@ export const HouseIcon = ({ className = 'w-6 h-6' }: { className?: string }) => 
     <svg xmlns="http://www.w3.org/2000/svg" className={className} viewBox="0 0 24 24" fill="currentColor">
         <path d="M12.71 2.29a1 1 0 0 0-1.42 0l-9 9a1 1 0 0 0 0 1.42A1 1 0 0 0 3 13v7.32A2.68 2.68 0 0 0 5.68 23h2.11a.68.68 0 0 0 .68-.68V18.1a.68.68 0 0 1 .68-.68h4.22a.68.68 0 0 1 .68.68v4.22a.68.68 0 0 0 .68.68h2.11A2.68 2.68 0 0 0 21 20.32V13a1 1 0 0 0 .71-1.71a1 1 0 0 0-.21-.29l-9-9Z"/>
         <path d="M21.71 11.29a1 1 0 0 0-1.42 0l-9 9a1 1 0 0 0 0 1.42A1 1 0 0 0 12 22a1 1 0 0 0 .71-.29l9-9a1 1 0 0 0 0-1.42Z"/>
+    </svg>
+);
+
+export const ChevronDownIcon = ({ className = 'w-5 h-5' }: { className?: string }) => (
+    <svg className={className} xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor">
+        <path fillRule="evenodd" d="M5.293 7.293a1 1 0 011.414 0L10 10.586l3.293-3.293a1 1 0 111.414 1.414l-4 4a1 1 0 01-1.414 0l-4-4a1 1 0 010-1.414z" clipRule="evenodd" />
     </svg>
 );
