@@ -1,4 +1,4 @@
-import { createClient } from '@vercel/kv';
+import { kv } from '@vercel/kv';
 import type { VercelRequest, VercelResponse } from '@vercel/node';
 import { Child, Status } from '../types.js';
 import { DEFAULT_STATUSES } from '../constants.js';
@@ -11,28 +11,17 @@ interface Data {
 const DATA_KEY = 'daycare-data-store';
 
 export default async function handler(req: VercelRequest, res: VercelResponse) {
-  // Provide a clearer error if the environment variables are not set correctly.
-  if (!process.env.STORAGE_REST_API_URL || !process.env.STORAGE_REST_API_TOKEN) {
-    const errorMessage = 'Database connection is not configured. Missing STORAGE_REST_API_URL or STORAGE_REST_API_TOKEN environment variables. Please connect the database in your Vercel project settings.';
-    console.error(errorMessage);
-    return res.status(500).json({ message: errorMessage });
-  }
-
-  // Initialize the client *inside* the handler to ensure env vars are loaded.
-  const kv = createClient({
-    url: process.env.STORAGE_REST_API_URL,
-    token: process.env.STORAGE_REST_API_TOKEN,
-  });
-
   try {
     if (req.method === 'GET') {
       let data = await kv.get<Data>(DATA_KEY);
       if (!data) {
-        // If no data exists yet, initialize with default statuses
-        data = {
+        // If no data exists yet, initialize with default statuses and save it.
+        const initialData = {
           children: [],
           statuses: DEFAULT_STATUSES,
         };
+        await kv.set(DATA_KEY, initialData);
+        data = initialData;
       }
       return res.status(200).json(data);
     } 
