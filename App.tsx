@@ -4,7 +4,7 @@ import ChildCard from './components/ChildCard';
 import Footer from './components/Footer';
 import Modal from './components/Modal';
 import { Child, Status } from './types';
-import { DEFAULT_STATUSES, LOCAL_STORAGE_KEYS } from './constants';
+import { DEFAULT_STATUSES } from './constants';
 
 type ModalState = null | {
   type: 'addChild' | 'settings' | 'addNote' | 'confirm' | 'resetConfirm';
@@ -15,53 +15,54 @@ const App: React.FC = () => {
   const [children, setChildren] = useState<Child[]>([]);
   const [statuses, setStatuses] = useState<Status[]>([]);
   const [isLoading, setIsLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
   const [activeFilter, setActiveFilter] = useState<string | null>(null);
   const [modal, setModal] = useState<ModalState>(null);
 
-  const loadDataFromStorage = useCallback(() => {
+  const fetchData = useCallback(async () => {
+    setError(null);
     try {
-      const storedChildren = localStorage.getItem(LOCAL_STORAGE_KEYS.CHILDREN);
-      const storedStatuses = localStorage.getItem(LOCAL_STORAGE_KEYS.STATUSES);
-
-      if (storedChildren) {
-        setChildren(JSON.parse(storedChildren));
+      const response = await fetch('/api/data');
+      if (!response.ok) {
+        throw new Error(`Network response was not ok: ${response.statusText}`);
       }
-      if (storedStatuses) {
-        setStatuses(JSON.parse(storedStatuses));
-      } else {
-        setStatuses(DEFAULT_STATUSES);
-        localStorage.setItem(LOCAL_STORAGE_KEYS.STATUSES, JSON.stringify(DEFAULT_STATUSES));
-      }
-    } catch (error) {
-      console.error("Failed to load data from localStorage", error);
-      setStatuses(DEFAULT_STATUSES);
+      const data = await response.json();
+      setChildren(data.children || []);
+      setStatuses(data.statuses || DEFAULT_STATUSES);
+    } catch (err) {
+      const errorMessage = err instanceof Error ? err.message : 'An unknown error occurred';
+      console.error("Failed to fetch data from server:", errorMessage);
+      setError(`Failed to fetch data from server:\n${errorMessage}`);
     } finally {
       setIsLoading(false);
     }
   }, []);
 
   useEffect(() => {
-    loadDataFromStorage();
-    const intervalId = setInterval(loadDataFromStorage, 3000);
-    
-    const handleStorageChange = (event: StorageEvent) => {
-        if (event.key === LOCAL_STORAGE_KEYS.CHILDREN || event.key === LOCAL_STORAGE_KEYS.STATUSES) {
-            loadDataFromStorage();
-        }
-    };
-    window.addEventListener('storage', handleStorageChange);
+    fetchData();
+    const intervalId = setInterval(fetchData, 5000); // Fetch every 5 seconds
+    return () => clearInterval(intervalId);
+  }, [fetchData]);
 
-    return () => {
-        clearInterval(intervalId);
-        window.removeEventListener('storage', handleStorageChange);
-    };
-  }, [loadDataFromStorage]);
-
-  const saveData = (newChildren: Child[], newStatuses: Status[]) => {
-      localStorage.setItem(LOCAL_STORAGE_KEYS.CHILDREN, JSON.stringify(newChildren));
-      localStorage.setItem(LOCAL_STORAGE_KEYS.STATUSES, JSON.stringify(newStatuses));
+  const saveData = async (newChildren: Child[], newStatuses: Status[]) => {
+    try {
+      const response = await fetch('/api/data', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ children: newChildren, statuses: newStatuses }),
+      });
+      if (!response.ok) {
+        throw new Error('Failed to save data');
+      }
+      // Set state immediately for a responsive UI, then refetch to confirm.
       setChildren(newChildren);
       setStatuses(newStatuses);
+      await fetchData(); // Ensure client is in sync with server
+    } catch (err) {
+      const errorMessage = err instanceof Error ? err.message : 'An unknown error occurred';
+      console.error("Failed to save data to server:", errorMessage);
+      setError(`Failed to save data to server:\n${errorMessage}`);
+    }
   };
   
   const handleAddChild = ({ firstName, lastName }: { firstName: string, lastName: string }) => {
@@ -106,7 +107,6 @@ const App: React.FC = () => {
   };
   
   const handleSaveSettings = (newStatuses: Status[]) => {
-    // If a status was removed, reassign children to the first status
     const newStatusIds = new Set(newStatuses.map(s => s.id));
     const firstStatusId = newStatuses.length > 0 ? newStatuses[0].id : '';
     const updatedChildren = children.map(c => ({
@@ -162,12 +162,17 @@ const App: React.FC = () => {
       <Header 
         onAddChild={() => setModal({ type: 'addChild' })}
         onSettings={() => setModal({ type: 'settings', payload: { statuses } })}
-        onRefresh={loadDataFromStorage}
+        onRefresh={fetchData}
         onReset={handleReset}
       />
       <main className="container mx-auto p-4 flex-grow">
         {isLoading ? (
-          <div className="text-center p-10">טוען נתונים...</div>
+          <div className="text-center p-10 text-gray-500">טוען נתונים...</div>
+        ) : error ? (
+            <div className="text-center p-10 bg-red-100 text-red-700 rounded-md">
+                <h3 className="font-bold">שגיאה בטעינת הנתונים</h3>
+                <pre className="mt-2 text-sm whitespace-pre-wrap">{error}</pre>
+            </div>
         ) : (
           <div className="grid grid-cols-1 gap-4 max-w-2xl mx-auto">
             {sortedAndFilteredChildren.map(child => (
@@ -184,7 +189,7 @@ const App: React.FC = () => {
         )}
       </main>
       
-      {!isLoading && (
+      {!isLoading && !error && (
         <Footer 
           children={children} 
           statuses={statuses}
