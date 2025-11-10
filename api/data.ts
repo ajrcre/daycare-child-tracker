@@ -1,4 +1,4 @@
-import { kv } from '@vercel/kv';
+import { createClient } from '@vercel/kv';
 import type { VercelRequest, VercelResponse } from '@vercel/node';
 import { Child, Status } from '../types.js';
 import { DEFAULT_STATUSES } from '../constants.js';
@@ -11,6 +11,12 @@ interface Data {
 const DATA_KEY = 'daycare-data-store';
 
 export default async function handler(req: VercelRequest, res: VercelResponse) {
+  // Create a custom client inside the handler to ensure env vars are loaded.
+  const kv = createClient({
+    url: process.env.STORAGE_REST_API_URL,
+    token: process.env.STORAGE_REST_API_TOKEN,
+  });
+
   try {
     if (req.method === 'GET') {
       let data = await kv.get<Data>(DATA_KEY);
