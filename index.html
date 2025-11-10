@@ -1,4 +1,21 @@
-<script type="importmap">
+<!DOCTYPE html>
+<html lang="he">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>צהרון - מעקב איסוף</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+      /* Simple scrollbar hiding for a cleaner look on scrollable elements */
+      .no-scrollbar::-webkit-scrollbar {
+          display: none;
+      }
+      .no-scrollbar {
+          -ms-overflow-style: none;  /* IE and Edge */
+          scrollbar-width: none;  /* Firefox */
+      }
+    </style>
+  <script type="importmap">
 {
   "imports": {
     "react": "https://aistudiocdn.com/react@^19.2.0",
@@ -11,4 +28,9 @@
   }
 }
 </script>
-full contents of index.html
+</head>
+  <body>
+    <div id="root"></div>
+    <script type="module" src="/index.tsx"></script>
+  </body>
+</html>
