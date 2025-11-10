@@ -1,4 +1,4 @@
-import { kv } from '@vercel/kv';
+import { createClient } from '@vercel/kv';
 import type { VercelRequest, VercelResponse } from '@vercel/node';
 import { Child, Status } from '../types.js';
 import { DEFAULT_STATUSES } from '../constants.js';
@@ -6,8 +6,18 @@ import { DEFAULT_STATUSES } from '../constants.js';
 const CHILDREN_KEY = 'children';
 const STATUSES_KEY = 'statuses';
 
+// Create a KV client that explicitly uses the correct environment variables
+const kv = createClient({
+  url: process.env.STORAGE_REST_API_URL as string,
+  token: process.env.STORAGE_REST_API_TOKEN as string,
+});
+
 export default async function handler(req: VercelRequest, res: VercelResponse) {
   try {
+    if (!process.env.STORAGE_REST_API_URL || !process.env.STORAGE_REST_API_TOKEN) {
+      throw new Error('Database connection is not configured. Missing STORAGE environment variables.');
+    }
+  
     if (req.method === 'GET') {
       let statuses: Status[] | null = await kv.get(STATUSES_KEY);
       if (!statuses) {
