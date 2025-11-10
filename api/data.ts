@@ -1,7 +1,7 @@
 import { kv } from '@vercel/kv';
 import type { VercelRequest, VercelResponse } from '@vercel/node';
-import { Child, Status } from '../types';
-import { DEFAULT_STATUSES } from '../constants';
+import { Child, Status } from '../types.js';
+import { DEFAULT_STATUSES } from '../constants.js';
 
 interface Data {
   children: Child[];
