@@ -1,4 +1,5 @@
-import type { NextApiRequest, NextApiResponse } from 'next';
+import { kv } from '@vercel/kv';
+import type { VercelRequest, VercelResponse } from '@vercel/node';
 import { Child, Status } from '../types';
 import { DEFAULT_STATUSES } from '../constants';
 
@@ -7,43 +8,40 @@ interface Data {
   statuses: Status[];
 }
 
-// In-memory "database" to store application state.
-// This will be reset when the server restarts.
-let dataStore: Data = {
-  children: [],
-  statuses: DEFAULT_STATUSES,
-};
+const DATA_KEY = 'daycare-data-store';
 
-/**
- * API handler for managing children and statuses data.
- * - GET /api/data: Retrieves the current list of children and statuses.
- * - POST /api/data: Updates the list of children and statuses.
- */
-export default function handler(
-  req: NextApiRequest,
-  res: NextApiResponse<Data | { message: string }>
-) {
-  if (req.method === 'GET') {
-    res.status(200).json(dataStore);
-  } else if (req.method === 'POST') {
-    try {
-      const { children, statuses } = req.body as Data;
-      
-      // Basic validation to ensure the payload is in the expected format.
-      if (!Array.isArray(children) || !Array.isArray(statuses)) {
-        return res.status(400).json({ message: 'Invalid data format' });
+export default async function handler(req: VercelRequest, res: VercelResponse) {
+  try {
+    if (req.method === 'GET') {
+      let data = await kv.get<Data>(DATA_KEY);
+      if (!data) {
+        // If no data exists yet, initialize with default statuses
+        data = {
+          children: [],
+          statuses: DEFAULT_STATUSES,
+        };
       }
+      return res.status(200).json(data);
+    } 
+    
+    if (req.method === 'POST') {
+      const { children, statuses } = req.body as Data;
 
-      dataStore = { children, statuses };
-      // A success message is sent back, though the client doesn't use it.
-      res.status(200).json({ message: 'Data saved successfully' });
-    } catch (error) {
-      console.error('Error saving data:', error);
-      res.status(500).json({ message: 'Failed to save data' });
-    }
-  } else {
-    // Handle unsupported HTTP methods.
+      if (!Array.isArray(children) || !Array.isArray(statuses)) {
+        return res.status(400).json({ message: 'Invalid data format provided.' });
+      }
+      
+      await kv.set(DATA_KEY, { children, statuses });
+      return res.status(200).json({ message: 'Data saved successfully.' });
+    } 
+      
+    // Handle other methods
     res.setHeader('Allow', ['GET', 'POST']);
-    res.status(405).end(`Method ${req.method} Not Allowed`);
+    return res.status(405).end(`Method ${req.method} Not Allowed`);
+    
+  } catch (error) {
+    console.error('API Error:', error);
+    const message = error instanceof Error ? error.message : 'An unknown error occurred';
+    return res.status(500).json({ message: `Internal Server Error: ${message}` });
   }
 }

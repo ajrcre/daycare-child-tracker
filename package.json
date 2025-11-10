@@ -1,1 +1,19 @@
-full contents of package.json
+{
+  "name": "daycare-tracker-app",
+  "version": "0.1.0",
+  "private": true,
+  "scripts": {
+    "build": "echo 'No build step required for this project.'"
+  },
+  "dependencies": {
+    "@vercel/kv": "^1.0.1",
+    "react": "18.2.0",
+    "react-dom": "18.2.0"
+  },
+  "devDependencies": {
+    "@types/react": "18.2.37",
+    "@types/react-dom": "18.2.15",
+    "@vercel/node": "^3.0.25",
+    "typescript": "5.2.2"
+  }
+}
