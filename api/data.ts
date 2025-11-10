@@ -3,13 +3,6 @@ import type { VercelRequest, VercelResponse } from '@vercel/node';
 import { Child, Status } from '../types.js';
 import { DEFAULT_STATUSES } from '../constants.js';
 
-// Create a custom client that reads from environment variables
-// with the 'STORAGE_' prefix, as configured in the Vercel dashboard.
-const kv = createClient({
-  url: process.env.STORAGE_REST_API_URL!,
-  token: process.env.STORAGE_REST_API_TOKEN!,
-});
-
 interface Data {
   children: Child[];
   statuses: Status[];
@@ -24,6 +17,12 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     console.error(errorMessage);
     return res.status(500).json({ message: errorMessage });
   }
+
+  // Initialize the client *inside* the handler to ensure env vars are loaded.
+  const kv = createClient({
+    url: process.env.STORAGE_REST_API_URL,
+    token: process.env.STORAGE_REST_API_TOKEN,
+  });
 
   try {
     if (req.method === 'GET') {
