@@ -1,10 +1,10 @@
-import React, { useState, useEffect, useMemo } from 'react';
+import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import Header from './components/Header';
 import ChildCard from './components/ChildCard';
 import Footer from './components/Footer';
 import Modal from './components/Modal';
 import { Child, Status } from './types';
-import { DEFAULT_STATUSES } from './constants';
+import { DEFAULT_STATUSES, LOCAL_STORAGE_KEYS } from './constants';
 
 type ModalState = null | {
   type: 'addChild' | 'settings' | 'addNote' | 'confirm' | 'resetConfirm';
@@ -18,45 +18,50 @@ const App: React.FC = () => {
   const [activeFilter, setActiveFilter] = useState<string | null>(null);
   const [modal, setModal] = useState<ModalState>(null);
 
-  const fetchData = async () => {
-    // We don't set loading to true for polling refreshes to avoid UI flicker
+  const loadDataFromStorage = useCallback(() => {
     try {
-      const response = await fetch('/api/data');
-      if (!response.ok) {
-        throw new Error(`Network response was not ok: ${response.statusText}`);
+      const storedChildren = localStorage.getItem(LOCAL_STORAGE_KEYS.CHILDREN);
+      const storedStatuses = localStorage.getItem(LOCAL_STORAGE_KEYS.STATUSES);
+
+      if (storedChildren) {
+        setChildren(JSON.parse(storedChildren));
       }
-      const data = await response.json();
-      setChildren(data.children || []);
-      // Use default statuses as a fallback if fetch fails or returns empty
-      setStatuses(data.statuses && data.statuses.length > 0 ? data.statuses : DEFAULT_STATUSES);
+      if (storedStatuses) {
+        setStatuses(JSON.parse(storedStatuses));
+      } else {
+        setStatuses(DEFAULT_STATUSES);
+        localStorage.setItem(LOCAL_STORAGE_KEYS.STATUSES, JSON.stringify(DEFAULT_STATUSES));
+      }
     } catch (error) {
-      console.error("Failed to fetch data from server:", error);
+      console.error("Failed to load data from localStorage", error);
+      setStatuses(DEFAULT_STATUSES);
     } finally {
       setIsLoading(false);
     }
-  };
-  
-  useEffect(() => {
-    fetchData(); // Initial fetch
-    const intervalId = setInterval(fetchData, 3000); // Poll every 3 seconds
-    return () => clearInterval(intervalId);
   }, []);
 
-  const saveDataToServer = async (newChildren: Child[], newStatuses: Status[]) => {
-    // Optimistically update the local state for a snappy UI
-    setChildren(newChildren);
-    setStatuses(newStatuses);
+  useEffect(() => {
+    loadDataFromStorage();
+    const intervalId = setInterval(loadDataFromStorage, 3000);
+    
+    const handleStorageChange = (event: StorageEvent) => {
+        if (event.key === LOCAL_STORAGE_KEYS.CHILDREN || event.key === LOCAL_STORAGE_KEYS.STATUSES) {
+            loadDataFromStorage();
+        }
+    };
+    window.addEventListener('storage', handleStorageChange);
 
-    try {
-      await fetch('/api/data', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ children: newChildren, statuses: newStatuses }),
-      });
-    } catch (error) {
-      console.error("Failed to save data to server:", error);
-      // Optional: Add logic to revert optimistic update or show an error toast
-    }
+    return () => {
+        clearInterval(intervalId);
+        window.removeEventListener('storage', handleStorageChange);
+    };
+  }, [loadDataFromStorage]);
+
+  const saveData = (newChildren: Child[], newStatuses: Status[]) => {
+      localStorage.setItem(LOCAL_STORAGE_KEYS.CHILDREN, JSON.stringify(newChildren));
+      localStorage.setItem(LOCAL_STORAGE_KEYS.STATUSES, JSON.stringify(newStatuses));
+      setChildren(newChildren);
+      setStatuses(newStatuses);
   };
   
   const handleAddChild = ({ firstName, lastName }: { firstName: string, lastName: string }) => {
@@ -68,14 +73,14 @@ const App: React.FC = () => {
       statusId: statuses[0].id,
       lastUpdated: new Date().toISOString(),
     };
-    saveDataToServer([...children, newChild], statuses);
+    saveData([...children, newChild], statuses);
   };
 
   const handleUpdateChildStatus = (childId: string, statusId: string) => {
     const newChildren = children.map(c => 
       c.id === childId ? { ...c, statusId, lastUpdated: new Date().toISOString() } : c
     );
-    saveDataToServer(newChildren, statuses);
+    saveData(newChildren, statuses);
   };
   
   const handleDeleteChild = (childId: string) => {
@@ -85,7 +90,7 @@ const App: React.FC = () => {
   const confirmDeleteChild = () => {
     if(modal?.type !== 'confirm' || !modal.payload.childId) return;
     const newChildren = children.filter(c => c.id !== modal.payload.childId);
-    saveDataToServer(newChildren, statuses);
+    saveData(newChildren, statuses);
   };
 
   const handleAddNote = (childId: string, currentNote: string) => {
@@ -97,17 +102,18 @@ const App: React.FC = () => {
       const newChildren = children.map(c => 
         c.id === modal.payload.childId ? { ...c, notes: note } : c
       );
-      saveDataToServer(newChildren, statuses);
+      saveData(newChildren, statuses);
   };
   
   const handleSaveSettings = (newStatuses: Status[]) => {
+    // If a status was removed, reassign children to the first status
     const newStatusIds = new Set(newStatuses.map(s => s.id));
     const firstStatusId = newStatuses.length > 0 ? newStatuses[0].id : '';
     const updatedChildren = children.map(c => ({
         ...c,
         statusId: newStatusIds.has(c.statusId) ? c.statusId : firstStatusId,
     }));
-    saveDataToServer(updatedChildren, newStatuses);
+    saveData(updatedChildren, newStatuses);
   };
   
   const handleReset = () => {
@@ -122,7 +128,7 @@ const App: React.FC = () => {
         statusId: firstStatusId,
         lastUpdated: new Date().toISOString(),
     }));
-    saveDataToServer(newChildren, statuses);
+    saveData(newChildren, statuses);
   };
 
   const sortedAndFilteredChildren = useMemo(() => {
@@ -156,7 +162,7 @@ const App: React.FC = () => {
       <Header 
         onAddChild={() => setModal({ type: 'addChild' })}
         onSettings={() => setModal({ type: 'settings', payload: { statuses } })}
-        onRefresh={fetchData}
+        onRefresh={loadDataFromStorage}
         onReset={handleReset}
       />
       <main className="container mx-auto p-4 flex-grow">
