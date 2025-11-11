@@ -3,6 +3,7 @@ import Header from './components/Header';
 import ChildCard from './components/ChildCard';
 import Footer from './components/Footer';
 import Modal from './components/Modal';
+import FAQPage from './components/FAQPage';
 import { Child, Status } from './types';
 import { DEFAULT_STATUSES } from './constants';
 
@@ -11,6 +12,8 @@ type ModalState = null | {
   payload?: any;
 };
 
+type View = 'main' | 'faq';
+
 const App: React.FC = () => {
   const [children, setChildren] = useState<Child[]>([]);
   const [statuses, setStatuses] = useState<Status[]>([]);
@@ -18,6 +21,7 @@ const App: React.FC = () => {
   const [error, setError] = useState<string | null>(null);
   const [activeFilter, setActiveFilter] = useState<string | null>(null);
   const [modal, setModal] = useState<ModalState>(null);
+  const [view, setView] = useState<View>('main');
 
   const fetchData = useCallback(async () => {
     setError(null);
@@ -39,10 +43,12 @@ const App: React.FC = () => {
   }, []);
 
   useEffect(() => {
-    fetchData();
-    const intervalId = setInterval(fetchData, 5000); // Fetch every 5 seconds
-    return () => clearInterval(intervalId);
-  }, [fetchData]);
+    if (view === 'main') {
+        fetchData();
+        const intervalId = setInterval(fetchData, 5000); // Fetch every 5 seconds
+        return () => clearInterval(intervalId);
+    }
+  }, [fetchData, view]);
 
   const saveData = async (newChildren: Child[], newStatuses: Status[]) => {
     try {
@@ -164,38 +170,46 @@ const App: React.FC = () => {
         onSettings={() => setModal({ type: 'settings', payload: { statuses } })}
         onRefresh={fetchData}
         onReset={handleReset}
+        onNavigateToFaq={() => setView('faq')}
       />
-      <main className="container mx-auto p-4 flex-grow">
-        {isLoading ? (
-          <div className="text-center p-10 text-gray-500">טוען נתונים...</div>
-        ) : error ? (
-            <div className="text-center p-10 bg-red-100 text-red-700 rounded-md">
-                <h3 className="font-bold">שגיאה בטעינת הנתונים</h3>
-                <pre className="mt-2 text-sm whitespace-pre-wrap">{error}</pre>
-            </div>
-        ) : (
-          <div className="grid grid-cols-1 gap-4 max-w-2xl mx-auto">
-            {sortedAndFilteredChildren.map(child => (
-              <ChildCard 
-                key={child.id} 
-                child={child} 
-                statuses={statuses} 
-                onStatusChange={handleUpdateChildStatus}
-                onDelete={handleDeleteChild}
-                onAddNote={handleAddNote}
-              />
-            ))}
-          </div>
-        )}
-      </main>
       
-      {!isLoading && !error && (
-        <Footer 
-          children={children} 
-          statuses={statuses}
-          activeFilter={activeFilter}
-          onFilterChange={setActiveFilter}
-        />
+      {view === 'main' ? (
+        <>
+            <main className="container mx-auto p-4 flex-grow">
+                {isLoading ? (
+                <div className="text-center p-10 text-gray-500">טוען נתונים...</div>
+                ) : error ? (
+                    <div className="text-center p-10 bg-red-100 text-red-700 rounded-md">
+                        <h3 className="font-bold">שגיאה בטעינת הנתונים</h3>
+                        <pre className="mt-2 text-sm whitespace-pre-wrap">{error}</pre>
+                    </div>
+                ) : (
+                <div className="grid grid-cols-1 gap-4 max-w-2xl mx-auto">
+                    {sortedAndFilteredChildren.map(child => (
+                    <ChildCard 
+                        key={child.id} 
+                        child={child} 
+                        statuses={statuses} 
+                        onStatusChange={handleUpdateChildStatus}
+                        onDelete={handleDeleteChild}
+                        onAddNote={handleAddNote}
+                    />
+                    ))}
+                </div>
+                )}
+            </main>
+            
+            {!isLoading && !error && (
+                <Footer 
+                children={children} 
+                statuses={statuses}
+                activeFilter={activeFilter}
+                onFilterChange={setActiveFilter}
+                />
+            )}
+        </>
+      ) : (
+        <FAQPage onBack={() => setView('main')} />
       )}
 
       {modal && (

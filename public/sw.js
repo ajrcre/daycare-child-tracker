@@ -4,7 +4,8 @@ const API_CACHE_NAME = 'daycare-api-cache-v1';
 
 const APP_SHELL = [
     '/',
-    '/index.html'
+    '/index.html',
+    '/faq.json'
 ];
 
 self.addEventListener('install', event => {

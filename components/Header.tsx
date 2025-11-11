@@ -1,15 +1,15 @@
-
 import React, { useState, useEffect, useRef } from 'react';
-import { SettingsIcon, AddIcon, RefreshIcon, ResetIcon, MenuIcon, HouseIcon } from './Icons';
+import { SettingsIcon, AddIcon, RefreshIcon, ResetIcon, MenuIcon, HouseIcon, QuestionMarkIcon } from './Icons';
 
 interface HeaderProps {
   onAddChild: () => void;
   onSettings: () => void;
   onRefresh: () => void;
   onReset: () => void;
+  onNavigateToFaq: () => void;
 }
 
-const Header: React.FC<HeaderProps> = ({ onAddChild, onSettings, onRefresh, onReset }) => {
+const Header: React.FC<HeaderProps> = ({ onAddChild, onSettings, onRefresh, onReset, onNavigateToFaq }) => {
   const [currentTime, setCurrentTime] = useState(new Date());
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const menuRef = useRef<HTMLDivElement>(null);
@@ -40,6 +40,7 @@ const Header: React.FC<HeaderProps> = ({ onAddChild, onSettings, onRefresh, onRe
   const menuItems = [
     { label: 'הגדרות', icon: <SettingsIcon />, action: onSettings },
     { label: 'הוסף ילד', icon: <AddIcon />, action: onAddChild },
+    { label: 'שאלות ותשובות', icon: <QuestionMarkIcon />, action: onNavigateToFaq },
     { label: 'רענן', icon: <RefreshIcon />, action: onRefresh },
     { label: 'איפוס', icon: <ResetIcon className="text-orange-500"/>, action: onReset, color: 'text-orange-500' },
   ];
