@@ -4,6 +4,7 @@ import ChildCard from './components/ChildCard';
 import Footer from './components/Footer';
 import Modal from './components/Modal';
 import FAQPage from './components/FAQPage';
+import { SearchIcon } from './components/Icons';
 import { Child, Status } from './types';
 import { DEFAULT_STATUSES } from './constants';
 
@@ -22,6 +23,7 @@ const App: React.FC = () => {
   const [activeFilter, setActiveFilter] = useState<string | null>(null);
   const [modal, setModal] = useState<ModalState>(null);
   const [view, setView] = useState<View>('main');
+  const [searchQuery, setSearchQuery] = useState('');
 
   const fetchData = useCallback(async () => {
     setError(null);
@@ -139,10 +141,16 @@ const App: React.FC = () => {
 
   const sortedAndFilteredChildren = useMemo(() => {
     const absentStatus = statuses.find(s => s.label === 'לא הגיע');
-    
-    return children
+    const lowercasedQuery = searchQuery.toLowerCase();
+
+    const filtered = children
       .filter(child => activeFilter === null || child.statusId === activeFilter)
-      .sort((a, b) => {
+      .filter(child => 
+        !lowercasedQuery || 
+        `${child.firstName} ${child.lastName}`.toLowerCase().includes(lowercasedQuery)
+      );
+
+    return filtered.sort((a, b) => {
         const isAAbsent = a.statusId === absentStatus?.id;
         const isBAbsent = b.statusId === absentStatus?.id;
         
@@ -153,7 +161,7 @@ const App: React.FC = () => {
         const nameB = `${b.firstName} ${b.lastName}`;
         return nameA.localeCompare(nameB, 'he');
       });
-  }, [children, statuses, activeFilter]);
+  }, [children, statuses, activeFilter, searchQuery]);
 
   const modalConfig = {
     'addChild': { title: 'הוספת ילד חדש' },
@@ -176,6 +184,18 @@ const App: React.FC = () => {
       {view === 'main' ? (
         <>
             <main className="container mx-auto p-4 flex-grow">
+                <div className="relative max-w-2xl mx-auto mb-4">
+                    <span className="absolute inset-y-0 left-0 flex items-center pl-3">
+                        <SearchIcon className="w-5 h-5 text-gray-400" />
+                    </span>
+                    <input
+                        type="text"
+                        placeholder="חיפוש ילד/ה..."
+                        value={searchQuery}
+                        onChange={(e) => setSearchQuery(e.target.value)}
+                        className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    />
+                </div>
                 {isLoading ? (
                 <div className="text-center p-10 text-gray-500">טוען נתונים...</div>
                 ) : error ? (
@@ -185,16 +205,22 @@ const App: React.FC = () => {
                     </div>
                 ) : (
                 <div className="grid grid-cols-1 gap-4 max-w-2xl mx-auto">
-                    {sortedAndFilteredChildren.map(child => (
-                    <ChildCard 
-                        key={child.id} 
-                        child={child} 
-                        statuses={statuses} 
-                        onStatusChange={handleUpdateChildStatus}
-                        onDelete={handleDeleteChild}
-                        onAddNote={handleAddNote}
-                    />
-                    ))}
+                    {sortedAndFilteredChildren.length > 0 ? (
+                      sortedAndFilteredChildren.map(child => (
+                        <ChildCard 
+                          key={child.id} 
+                          child={child} 
+                          statuses={statuses} 
+                          onStatusChange={handleUpdateChildStatus}
+                          onDelete={handleDeleteChild}
+                          onAddNote={handleAddNote}
+                        />
+                      ))
+                    ) : (
+                      <div className="text-center p-10 text-gray-500">
+                        לא נמצאו ילדים התואמים את החיפוש.
+                      </div>
+                    )}
                 </div>
                 )}
             </main>
